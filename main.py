@@ -59,8 +59,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.inputs_dict['local_server_port'] = int(self.ui.input_local_server.text().split(':')[1])
             self.inputs_dict['host_ip'] = self.ui.input_host.text().split(':')[0]
             self.inputs_dict['host_port'] = int(self.ui.input_host.text().split(':')[1])
-            self.inputs_dict['vpn_ip'] = self.ui.input_vpn.text().split(':')[0]
-            self.inputs_dict['vpn_port'] = int(self.ui.input_vpn.text().split(':')[1])
+            self.inputs_dict['vpn'] = self.ui.input_vpn.text()
             self.chat_window_trigger()
         except Exception as e:
             print(e)
@@ -71,6 +70,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.chat_window.show()
         self.hide()
 
+    def set_vpn_connection(self):
+        try:
+            ip = self.inputs_dict['vpn'].split(':')[0]
+            port = int(self.inputs_dict['vpn'].split(':')[1])
+        except:
+            raise Exception('Invalid VPN input')
+        vpn_destination = cryptochat.VpnDestination(
+            destination_ip=ip, 
+            destination_port=port
+        )
+        connection = cryptochat.Connection(
+            client_ip=self.inputs_dict['host_ip'],
+            client_port=self.inputs_dict['host_port'],
+            server_ip=self.inputs_dict['local_server_ip'],
+            server_port=self.inputs_dict['local_server_port'],
+        ).connect()
+        connection.client.send(vpn_destination.serialize())
+        connection.authenticate()
+
+
     def chat_window_trigger(self):
         try:
             self.inputs_triggers()
@@ -80,12 +99,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 client_port=self.inputs_dict['host_port'],
                 server_ip=self.inputs_dict['local_server_ip'],
                 server_port=self.inputs_dict['local_server_port'])
+            
             self.call_chat_window(cryptochat.Chat(user=user, connection=connection))
         except Exception as e:
             print(e)
 
 
-        
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()

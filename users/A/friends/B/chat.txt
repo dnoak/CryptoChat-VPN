@@ -1,0 +1,23 @@
+A: oi
+Desconhecido: oi
+A: oi
+A: oi
+A: oi
+A: hrhr
+Desconhecido: hehe
+A: /add-friend B
+A: oi
+A: oi
+B: oi
+A: oi
+A: hehe
+B: ola
+B: tudo bem?
+B: ok
+B: hehe
+A: oi
+A: oi
+A: oi
+B: oi
+B: o
+B: tudo eb

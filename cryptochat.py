@@ -1,13 +1,13 @@
+from itertools import count
 from pathlib import Path
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from dataclasses import dataclass
 from glob import glob
-import time
-import threading
-import os
-import sys
 import socket
+import threading
+import time
+import os
 
 @dataclass
 class Cryptography:
@@ -97,6 +97,7 @@ class User(Cryptography):
 class Authentication(Cryptography):
     session_token: str = os.urandom(16).hex()
     received_token: str = None
+    received_public_key: PKCS1_OAEP = None
 
     def verify_token(self, sent, received):
         print(f"Token enviado: {sent}")
@@ -110,48 +111,47 @@ class Authentication(Cryptography):
 
     def authenticate_first(self, user):
         self.client.send(user.public_key.exportKey())
-
-        received_public_key = RSA.import_key(self.server.recv(2048))
-
-        self.client.send(self.encrypt_RSA(received_public_key, self.session_token.encode()))
+        print(f"[{user.user_id}] send: user.public_key")
+        self.received_public_key = RSA.import_key(self.server.recv(2048))
+        print(f"[{user.user_id}] recv: received_public_key")
+        self.client.send(self.encrypt_RSA(self.received_public_key, self.session_token.encode()))
+        print(f"[{user.user_id}] send: session_token")
         received_encrypted_token = self.server.recv(2048)
+        print(f"[{user.user_id}] recv: received_encrypted_token")
         received_decrypted_token = self.decrypt_RSA(user.private_key, received_encrypted_token)
-
-        self.client.send(self.encrypt_RSA(received_public_key, received_decrypted_token))
+        self.client.send(self.encrypt_RSA(self.received_public_key, received_decrypted_token))
+        print(f"[{user.user_id}] send: received_decrypted_token")
         received_encrypted_session_token = self.server.recv(2048)
+        print(f"[{user.user_id}] recv: received_encrypted_session_token")
         received_decrypted_session_token = self.decrypt_RSA(user.private_key, received_encrypted_session_token)
-
         self.received_token = received_decrypted_token.decode()
+        return self.verify_token(self.session_token, received_decrypted_session_token.decode())
 
-        if self.verify_token(self.session_token, received_decrypted_session_token.decode()):
-            return received_public_key
-
-    
     def authenticate_second(self, user):
-        received_public_key = RSA.import_key(self.server.recv(2048))
-        
+        self.received_public_key = RSA.import_key(self.server.recv(2048))
+        print(f"[{user.user_id}] recv: received_public_key")
         self.client.send(user.public_key.exportKey())
-
+        print(f"[{user.user_id}] send: user.public_key")
         received_encrypted_token = self.server.recv(2048)
+        print(f"[{user.user_id}] recv: received_encrypted_token")
         received_decrypted_token = self.decrypt_RSA(user.private_key, received_encrypted_token)
-        self.client.send(self.encrypt_RSA(received_public_key, self.session_token.encode()))
-
+        self.client.send(self.encrypt_RSA(self.received_public_key, self.session_token.encode()))
+        print(f"[{user.user_id}] send: session_token")
         received_encrypted_session_token = self.server.recv(2048)
+        print(f"[{user.user_id}] recv: received_encrypted_session_token")
         received_decrypted_session_token = self.decrypt_RSA(user.private_key, received_encrypted_session_token)
-        self.client.send(self.encrypt_RSA(received_public_key, received_decrypted_token))
-
+        self.client.send(self.encrypt_RSA(self.received_public_key, received_decrypted_token))
+        print(f"[{user.user_id}] send: received_decrypted_token")
         self.received_token = received_decrypted_token.decode()
-
-        if self.verify_token(self.session_token, received_decrypted_session_token.decode()):
-            return received_public_key
+        return self.verify_token(self.session_token, received_decrypted_session_token.decode())
 
 
 @dataclass(kw_only=True)
 class Connection(Authentication):
     client_ip: str
     client_port: int = 50000
-    server_ip: str = 'localhost'
-    server_port: int = 50001
+    local_server_ip: str = 'localhost'
+    local_server_port: int = 50001
     server: socket.socket = None
     client: socket.socket = None
     server_is_online: bool = False
@@ -161,13 +161,13 @@ class Connection(Authentication):
     def start_server(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print(f'... Escutando a porta {self.server_ip}.')
-        server_socket.bind((self.server_ip, self.server_port))
+        print(f'... Escutando a porta {self.local_server_ip}.')
+        server_socket.bind((self.local_server_ip, self.local_server_port))
         server_socket.listen()
         self.server, address = server_socket.accept()
         self.first_to_auth = False
         self.server_is_online = True
-        print(f'... Servidor iniciado na porta {self.server_port}.')
+        print(f'... Servidor iniciado na porta {self.local_server_port}.')
 
     def connect_to_client(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -188,55 +188,41 @@ class Connection(Authentication):
         self.client.close()
         print('\nTimeout.')
 
-    def authenticate(self, user):
-        if self.first_to_auth:
-            return self.authenticate_first(user)
-        return self.authenticate_second(user)
+    def send_encrypted_message(self, message):
+        encrypted_message = self.encrypt_RSA(self.received_public_key, message.encode())
+        self.client.send(encrypted_message)
+        return message
     
-    def start(self):
+    def receive_encrypted_message(self, private_key):
+        received_encrypted_message = self.server.recv(2048)
+        received_decrypted_message = self.decrypt_RSA(
+            private_key, received_encrypted_message).decode()
+        token, message = received_decrypted_message.split(':', 1)
+        if token != self.session_token:
+            print(f'Token inválido. A conexão pode ter sido invadido.')
+            print(f'Token recebido: {token}')
+            print(f'Token original: {self.session_token}')
+            return None
+        return message
+
+    def authenticate(self, user):
+        while True:
+            if self.first_to_auth: 
+                self.authenticate_first(user)
+            else: 
+                self.authenticate_second(user)
+            if self.received_public_key is not None:
+                break
+            self.client.close()
+            self.server.close()
+            print('Tentando novamente a autenticação...')
+            self.connection.connect()
+        return self
+    
+    def connect(self):
         threading.Thread(target=self.start_server).start()
         self.connect_to_client()
         return self
-
-@dataclass(kw_only=True)
-class VPNServer:
-    vpn_user: User
-    vpn_ip: str = 'localhost'
-    vpn_port_source: int = 50100
-    vpn_port_destination: int = 50101
-
-    source_ip: str
-    source_port: int
-
-    destination_ip: str
-    destination_port: int
-
-    source_connection: Connection = None
-    destination_connection: Connection = None
-
-    def connect_to_source(self):
-        self.source_connection = Connection(
-            client_ip=self.source_ip,
-            client_port=self.source_port,
-            server_ip=self.vpn_ip,
-            server_port=self.vpn_port_source)
-        return self.source_connection
-    
-    def connect_to_destination(self):
-        self.destination_connection = Connection(
-            client_ip=self.destination_ip,
-            client_port=self.destination_port,
-            server_ip=self.vpn_ip,
-            server_port=self.vpn_port_destination)
-        return self.destination_connection
-    
-    def authenticate(self):
-        self.source_connection.authenticate(self.vpn_user)
-        #self.destination_connection.authenticate(self.source_connection.user)
-    
-    # def connect(self):
-    #     self.source_connect()
-    #     self.destination_connect()
 
 
 @dataclass(kw_only=True)
@@ -247,17 +233,6 @@ class Chat(Cryptography):
     friend_public_key: PKCS1_OAEP = None
     history: list[str] = None
 
-    def authenticate_chat(self):
-        while True:
-            self.connection.start()
-            self.friend_public_key = self.connection.authenticate(self.user)
-            if self.friend_public_key is not None:
-                break
-            self.connection.client.close()
-            self.connection.server.close()
-            print('Tentando novamente a autenticação...')
-            self.connection.start()
-
     def send_message(self, message):
         if message.strip() == '':
             return
@@ -265,27 +240,29 @@ class Chat(Cryptography):
             new_friend_id = message.split(' ', 1)[1]
             self.friend_id = self.user.add_friend(new_friend_id, self.friend_public_key)
         message_with_token = f"{self.connection.received_token}:{message}"
-        encrypted_message = self.encrypt_RSA(self.friend_public_key, message_with_token.encode())
-        self.connection.client.send(encrypted_message)
+        self.connection.send_encrypted_message(message_with_token)
         with threading.Lock():
             self.history.append(f"{self.user.user_id}: {message}\n")
             self.save_history()
         return f"{self.user.user_id}: {message}\n"
     
     def receive_message(self):
-        received_encrypted_message = self.connection.server.recv(2048)
-        received_decrypted_message = self.decrypt_RSA(
-            self.user.private_key, received_encrypted_message).decode()
-        token, message = received_decrypted_message.split(':', 1)
-        if token != self.connection.session_token:
-            print(f'Token inválido. O chat pode ter sido invadido.')
-            print(f'Token recebido: {token}')
-            print(f'Token original: {self.connection.session_token}')
-            return None
+        message = self.connection.receive_encrypted_message(self.user.private_key)
         with threading.Lock():
             self.history.append(f"{self.friend_id}: {message}\n")
             self.save_history()
         return f"{self.friend_id}: {message}\n"
+
+    def _test_threaded_chat(self):
+        def receive():
+            while True:
+                received_message = self.receive_message()
+                print(received_message, end='')
+        def send():
+            while True:
+                sent_message = self.send_message(input(f"{self.user.user_id}: "))
+        threading.Thread(target=receive).start()
+        threading.Thread(target=send).start()
 
     def save_history(self):
         if self.friend_id == self.user.unknown_friend_string:
@@ -307,28 +284,90 @@ class Chat(Cryptography):
         return chat_history
 
     def start(self):
-        self.authenticate_chat()
+        self.friend_public_key = self.connection.received_public_key
         self.friend_id = self.user.search_friend(self.friend_public_key)
         print(f'Inicando conversa com {self.friend_id}...')
         self.history = self.get_history()
         return self
 
+@dataclass(kw_only=True)
+class VpnDestination:
+    destination_ip: str = None
+    destination_port: int = None
+    destination_connection: Connection = None
 
-
-
-# user_A = User(user_id='A')
-# user_A.login()
-
-# connection = Connection(
-#     client_ip='localhost',
-#     client_port=50000,
-#     server_ip='localhost',
-#     server_port=50001,
-# )
-
-
-def p1():
+    def serialize(self):
+        return f"{self.destination_ip}:{self.destination_port}".encode()
     
+    def deserialize(self, serialized):
+        print(f"Deserializando {serialized}")
+        ip, port = serialized.decode().split(':')
+        self.destination_ip = ip
+        self.destination_port = int(port)
+
+@dataclass(kw_only=True)
+class VpnServer(VpnDestination):
+    vpn_user: User
+    local_server_ip: str = 'localhost'
+    local_server_port_source: int = 40002
+    local_server_port_destination: int = 50002
+
+    source_ip: str
+    source_port: int
+    source_connection: Connection = None
+
+    # destination_ip: str
+    # destination_port: int
+    # destination_connection: Connection = None
+
+    def intermediate_communication(self, connection_A, connection_B, communications):
+        def threaded():
+            for i in count(communications):
+                received = connection_A.server.recv(2048)
+                send = connection_B.client.send(received)
+                print(f"Recebido de << {connection_A.client_ip}:{connection_A.client_port}")
+                print(f"Enviado para >> {connection_B.client_ip}:{connection_B.client_port}\n{received}\n")
+        threading.Thread(target=threaded).start()
+
+    def authenticate_between_source_and_destination(self):
+        self.intermediate_communication(
+            connection_A=self.source_connection,
+            connection_B=self.destination_connection,
+            communications=3)
+        self.intermediate_communication(
+            connection_A=self.destination_connection,
+            connection_B=self.source_connection,
+            communications=3)
+
+    def chat_between_source_and_destination(self):
+        self.intermediate_communication(
+            connection_A=self.source_connection,
+            connection_B=self.destination_connection,
+            communications=0)
+        self.intermediate_communication(
+            connection_A=self.destination_connection,
+            connection_B=self.source_connection,
+            communications=0)
+
+    def connect_to_source(self):
+        self.source_connection = Connection(
+            client_ip=self.source_ip,
+            client_port=self.source_port,
+            local_server_ip=self.local_server_ip,
+            local_server_port=self.local_server_port_source
+        ).connect()
+        destination_info = self.source_connection.server.recv(2048)
+        self.deserialize(destination_info)
+        print(f"Conectando com {self.destination_ip}:{self.destination_port}")
+    
+    def connect_to_destination(self):
+        self.destination_connection = Connection(
+            client_ip=self.destination_ip,
+            client_port=self.destination_port,
+            local_server_ip=self.local_server_ip,
+            local_server_port=self.local_server_port_destination
+        ).connect()
+
 
 if __name__ == '__main__':
     source = Connection(
