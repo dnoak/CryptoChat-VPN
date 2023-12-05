@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(70, 70, 70)</string>
+   <string notr="true">background-color: rgb(60, 60, 60)</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -56,7 +56,7 @@
             <x>0</x>
             <y>0</y>
             <width>440</width>
-            <height>300</height>
+            <height>295</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -68,10 +68,10 @@
               </font>
              </property>
              <property name="styleSheet">
-              <string notr="true">background-color: rgb(100, 100, 100)</string>
+              <string notr="true">background-color: rgb(255, 255, 255)</string>
              </property>
              <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700; color:#ffffff;&quot;&gt;&amp;gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:700; color:#ffffff;&quot;&gt;&amp;gt;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -118,8 +118,17 @@
        </item>
        <item>
         <widget class="QPushButton" name="button_send_message">
+         <property name="font">
+          <font>
+           <pointsize>12</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(152, 152, 152)</string>
+         </property>
          <property name="text">
-          <string>Enviar</string>
+          <string>Send</string>
          </property>
         </widget>
        </item>

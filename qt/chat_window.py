@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'chat_window_2.ui'
+# Form implementation generated from reading ui file 'chat_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -15,7 +15,7 @@ class Ui_CHAT(object):
     def setupUi(self, CHAT):
         CHAT.setObjectName("CHAT")
         CHAT.resize(480, 468)
-        CHAT.setStyleSheet("background-color: rgb(70, 70, 70)")
+        CHAT.setStyleSheet("background-color: rgb(60, 60, 60)")
         self.centralwidget = QtWidgets.QWidget(CHAT)
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
@@ -38,7 +38,7 @@ class Ui_CHAT(object):
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 440, 300))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 440, 295))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.scrollAreaWidgetContents)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
@@ -46,7 +46,7 @@ class Ui_CHAT(object):
         font = QtGui.QFont()
         font.setPointSize(16)
         self.label_chat_history.setFont(font)
-        self.label_chat_history.setStyleSheet("background-color: rgb(100, 100, 100)")
+        self.label_chat_history.setStyleSheet("background-color: rgb(255, 255, 255)")
         self.label_chat_history.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
         self.label_chat_history.setObjectName("label_chat_history")
         self.horizontalLayout_3.addWidget(self.label_chat_history)
@@ -70,6 +70,11 @@ class Ui_CHAT(object):
         self.input_message.setObjectName("input_message")
         self.horizontalLayout.addWidget(self.input_message)
         self.button_send_message = QtWidgets.QPushButton(self.frame_2)
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        font.setBold(True)
+        self.button_send_message.setFont(font)
+        self.button_send_message.setStyleSheet("background-color: rgb(152, 152, 152)")
         self.button_send_message.setObjectName("button_send_message")
         self.horizontalLayout.addWidget(self.button_send_message)
         self.verticalLayout.addWidget(self.frame_2)
@@ -89,8 +94,8 @@ class Ui_CHAT(object):
         _translate = QtCore.QCoreApplication.translate
         CHAT.setWindowTitle(_translate("CHAT", "MainWindow"))
         self.friend_name.setText(_translate("CHAT", "<html><head/><body><p><span style=\" font-weight:700; color:#ffffff;\">-</span></p></body></html>"))
-        self.label_chat_history.setText(_translate("CHAT", "<html><head/><body><p><span style=\" font-weight:700; color:#ffffff;\">&gt;</span></p></body></html>"))
-        self.button_send_message.setText(_translate("CHAT", "Enviar"))
+        self.label_chat_history.setText(_translate("CHAT", "<html><head/><body><p><span style=\" font-size:14pt; font-weight:700; color:#ffffff;\">&gt;</span></p></body></html>"))
+        self.button_send_message.setText(_translate("CHAT", "Send"))
 
 
 if __name__ == "__main__":

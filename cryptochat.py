@@ -49,7 +49,7 @@ class User(Cryptography):
     user_id: str
     private_key: PKCS1_OAEP = None
     public_key: PKCS1_OAEP = None
-    friends: list[dict] = None
+    #friends: list[dict] = None
     unknown_friend_string: str = 'Desconhecido'
 
     def __post_init__(self):
@@ -80,7 +80,7 @@ class User(Cryptography):
             return self.unknown_friend_string
         if self.search_friend(friend_public_key) != self.unknown_friend_string:
             print(f'Usuário já adicionado.')
-            return self.unknown_friend_string
+            return self.search_friend(friend_public_key)
         else:
             friend_path = f'users/{self.user_id}/friends/{friend_id}'
             os.makedirs(friend_path)

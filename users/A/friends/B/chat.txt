@@ -60,3 +60,42 @@ A: ok.;
 B: k
 B: oi
 A: oi
+A: oi
+B: oi
+B: iu
+A: iu
+A: iu
+A: ui
+A: iu
+A: iu
+A: iu
+A: iu
+A: iu
+A: iu
+A: i
+A: ui
+A: u
+A: ui
+A: ui
+A: ui
+A: iur
+B: oi
+B: tudo 
+B: s
+B: s
+B: s
+B: s
+B: s
+B: a
+B: d
+B: ok
+B: tudo bem?
+A: background-color: rgb(60, 60, 60)
+A: ig
+A: gijgjhg;/
+A: /add-friend
+A: oi
+A: /add-friend oi
+A: /add=
+A: /add-friend B
+A: jehehe
