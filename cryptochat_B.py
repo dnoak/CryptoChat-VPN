@@ -376,10 +376,10 @@ class CryptoChatVpn(Cryptography, VpnDestination):
 if __name__ == '__main__':
     user_B = User(user_id='B').login()
     B_connection = Connection(
-        client_ip='127.0.0.1',
-        client_port=60_002,
-        local_server_ip='127.0.0.1',
-        local_server_port=60_000,
+        client_ip='172.20.53.103',
+        client_port=60_000,
+        local_server_ip='0.0.0.0',
+        local_server_port=60_002,
     )
     
     chat = CryptoChatVpn(

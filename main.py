@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from qt.chat_window import Ui_CHAT
 from qt.menu_window import Ui_MENU
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 class ChatWindow(QtWidgets.QMainWindow):
     def __init__(self, chat: cryptochat.CryptoChatVpn):
