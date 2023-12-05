@@ -149,9 +149,9 @@ class Authentication(Cryptography):
 @dataclass(kw_only=True)
 class Connection(Authentication):
     client_ip: str
-    client_port: int = 50000
-    local_server_ip: str = 'localhost'
-    local_server_port: int = 50001
+    client_port: int
+    local_server_ip: str
+    local_server_port: int
     server: socket.socket = None
     client: socket.socket = None
     server_is_online: bool = False
@@ -224,101 +224,32 @@ class Connection(Authentication):
         self.connect_to_client()
         return self
 
-
-@dataclass(kw_only=True)
-class Chat(Cryptography):
-    user: User
-    connection: Connection
-    friend_id: str = None
-    friend_public_key: PKCS1_OAEP = None
-    history: list[str] = None
-
-    def send_message(self, message):
-        if message.strip() == '':
-            return
-        if message.startswith('/add-friend '):
-            new_friend_id = message.split(' ', 1)[1]
-            self.friend_id = self.user.add_friend(new_friend_id, self.friend_public_key)
-        message_with_token = f"{self.connection.received_token}:{message}"
-        self.connection.send_encrypted_message(message_with_token)
-        with threading.Lock():
-            self.history.append(f"{self.user.user_id}: {message}\n")
-            self.save_history()
-        return f"{self.user.user_id}: {message}\n"
-    
-    def receive_message(self):
-        message = self.connection.receive_encrypted_message(self.user.private_key)
-        with threading.Lock():
-            self.history.append(f"{self.friend_id}: {message}\n")
-            self.save_history()
-        return f"{self.friend_id}: {message}\n"
-
-    def _test_threaded_chat(self):
-        def receive():
-            while True:
-                received_message = self.receive_message()
-                print(received_message, end='')
-        def send():
-            while True:
-                sent_message = self.send_message(input(f"{self.user.user_id}: "))
-        threading.Thread(target=receive).start()
-        threading.Thread(target=send).start()
-
-    def save_history(self):
-        if self.friend_id == self.user.unknown_friend_string:
-            return
-        chat_history_path = f'users/{self.user.user_id}/friends/{self.friend_id}/chat.txt'
-        with open(chat_history_path, 'w') as c:
-            c.writelines(self.history)
-            c.close()
-
-    def get_history(self):
-        if self.friend_id == self.user.unknown_friend_string:
-            return []
-        chat_history_path = f'users/{self.user.user_id}/friends/{self.friend_id}/chat.txt'
-        if not os.path.exists(chat_history_path):
-            return []
-        with open(chat_history_path, 'r') as c:
-            chat_history = c.readlines()
-            c.close()
-        return chat_history
-
-    def start(self):
-        self.friend_public_key = self.connection.received_public_key
-        self.friend_id = self.user.search_friend(self.friend_public_key)
-        print(f'Inicando conversa com {self.friend_id}...')
-        self.history = self.get_history()
-        return self
-
 @dataclass(kw_only=True)
 class VpnDestination:
-    destination_ip: str = None
-    destination_port: int = None
-    destination_connection: Connection = None
+    vpn_destination_ip: str = None
+    vpn_destination_port: int = None
+    vpn_destination_connection: Connection = None
 
     def serialize(self):
-        return f"{self.destination_ip}:{self.destination_port}".encode()
+        return f"{self.vpn_destination_ip}:{self.vpn_destination_port}".encode()
     
     def deserialize(self, serialized):
         print(f"Deserializando {serialized}")
         ip, port = serialized.decode().split(':')
-        self.destination_ip = ip
-        self.destination_port = int(port)
+        self.vpn_destination_ip = ip
+        self.vpn_destination_port = int(port)
+
 
 @dataclass(kw_only=True)
 class VpnServer(VpnDestination):
     vpn_user: User
-    local_server_ip: str = 'localhost'
-    local_server_port_source: int = 40002
-    local_server_port_destination: int = 50002
+    local_server_ip: str
+    local_server_port_source: int
+    local_server_port_destination: int
 
     source_ip: str
     source_port: int
     source_connection: Connection = None
-
-    # destination_ip: str
-    # destination_port: int
-    # destination_connection: Connection = None
 
     def intermediate_communication(self, connection_A, connection_B, communications):
         def threaded():
@@ -358,22 +289,88 @@ class VpnServer(VpnDestination):
         ).connect()
         destination_info = self.source_connection.server.recv(2048)
         self.deserialize(destination_info)
-        print(f"Conectando com {self.destination_ip}:{self.destination_port}")
+        print(f"Conectando com {self.vpn_destination_ip}:{self.vpn_destination_port}")
     
     def connect_to_destination(self):
         self.destination_connection = Connection(
-            client_ip=self.destination_ip,
-            client_port=self.destination_port,
+            client_ip=self.vpn_destination_ip,
+            client_port=self.vpn_destination_port,
             local_server_ip=self.local_server_ip,
             local_server_port=self.local_server_port_destination
         ).connect()
 
 
-if __name__ == '__main__':
-    source = Connection(
-        client_ip='localhost',
-        client_port=40002,
-        server_ip='localhost',
-        server_port=40000,
-    ).start()
+@dataclass(kw_only=True)
+class CryptoChatVpn(Cryptography, VpnDestination):
+    user: User
+    connection: Connection
+    vpn: VpnDestination = None
+    friend_id: str = None
+    friend_public_key: PKCS1_OAEP = None
+    history: list[str] = None
 
+    def send_message(self, message):
+        if message.strip() == '':
+            return
+        if message.startswith('/add-friend '):
+            new_friend_id = message.split(' ', 1)[1]
+            self.friend_id = self.user.add_friend(new_friend_id, self.friend_public_key)
+        message_with_token = f"{self.connection.received_token}:{message}"
+        self.connection.send_encrypted_message(message_with_token)
+        with threading.Lock():
+            self.history.append(f"{self.user.user_id}: {message}\n")
+            self.save_history()
+        return f"{self.user.user_id}: {message}\n"
+    
+    def receive_message(self):
+        message = self.connection.receive_encrypted_message(self.user.private_key)
+        if message.strip() == '':
+            return
+        with threading.Lock():
+            self.history.append(f"{self.friend_id}: {message}\n")
+            self.save_history()
+        return f"{self.friend_id}: {message}\n"
+
+    def _test_threaded_chat(self):
+        def receive():
+            while True:
+                received_message = self.receive_message()
+                print(received_message, end='')
+        def send():
+            while True:
+                sent_message = self.send_message(input(f"{self.user.user_id}: "))
+        threading.Thread(target=receive).start()
+        threading.Thread(target=send).start()
+
+    def save_history(self):
+        if self.friend_id == self.user.unknown_friend_string:
+            return
+        chat_history_path = f'users/{self.user.user_id}/friends/{self.friend_id}/chat.txt'
+        with open(chat_history_path, 'w') as c:
+            c.writelines(self.history)
+            c.close()
+
+    def get_history(self):
+        if self.friend_id == self.user.unknown_friend_string:
+            return []
+        chat_history_path = f'users/{self.user.user_id}/friends/{self.friend_id}/chat.txt'
+        if not os.path.exists(chat_history_path):
+            return []
+        with open(chat_history_path, 'r') as c:
+            chat_history = c.readlines()
+            c.close()
+        return chat_history
+
+    def start(self):
+        self.connection.connect()
+        print(self.vpn)
+        if self.vpn.vpn_destination_ip is not None:
+            time.sleep(1)
+            self.connection.client.send(self.vpn.serialize())
+        self.connection.authenticate(self.user)
+
+        self.friend_public_key = self.connection.received_public_key
+        self.friend_id = self.user.search_friend(self.friend_public_key)
+        print(f'Inicando conversa com {self.friend_id}...')
+        self.history = self.get_history()
+        return self

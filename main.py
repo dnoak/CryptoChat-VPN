@@ -8,7 +8,7 @@ from qt.menu_window import Ui_MENU
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 class ChatWindow(QtWidgets.QMainWindow):
-    def __init__(self, chat: cryptochat.Chat):
+    def __init__(self, chat: cryptochat.CryptoChatVpn):
         super().__init__()
         self.ui = Ui_CHAT()
         self.ui.setupUi(self)
@@ -57,9 +57,16 @@ class MainWindow(QtWidgets.QMainWindow):
             self.inputs_dict['user_id'] = self.ui.input_user_id.text()
             self.inputs_dict['local_server_ip'] = self.ui.input_local_server.text().split(':')[0]
             self.inputs_dict['local_server_port'] = int(self.ui.input_local_server.text().split(':')[1])
-            self.inputs_dict['host_ip'] = self.ui.input_host.text().split(':')[0]
-            self.inputs_dict['host_port'] = int(self.ui.input_host.text().split(':')[1])
-            self.inputs_dict['vpn'] = self.ui.input_vpn.text()
+            if self.ui.input_vpn.text() != '':
+                self.inputs_dict['host_ip'] = self.ui.input_vpn.text().split(':')[0]
+                self.inputs_dict['host_port'] = int(self.ui.input_vpn.text().split(':')[1])
+                self.inputs_dict['vpn_ip'] = self.ui.input_host.text().split(':')[0]
+                self.inputs_dict['vpn_port'] = int(self.ui.input_host.text().split(':')[1])
+            else:
+                self.inputs_dict['host_ip'] = self.ui.input_host.text().split(':')[0]
+                self.inputs_dict['host_port'] = int(self.ui.input_host.text().split(':')[1])
+                self.inputs_dict['vpn_ip'] = None
+                self.inputs_dict['vpn_port'] = None
             self.chat_window_trigger()
         except Exception as e:
             print(e)
@@ -71,36 +78,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.hide()
 
     def set_vpn_connection(self):
-        try:
-            ip = self.inputs_dict['vpn'].split(':')[0]
-            port = int(self.inputs_dict['vpn'].split(':')[1])
-        except:
-            raise Exception('Invalid VPN input')
-        vpn_destination = cryptochat.VpnDestination(
-            destination_ip=ip, 
-            destination_port=port
-        )
         connection = cryptochat.Connection(
-            client_ip=self.inputs_dict['host_ip'],
-            client_port=self.inputs_dict['host_port'],
-            server_ip=self.inputs_dict['local_server_ip'],
-            server_port=self.inputs_dict['local_server_port'],
-        ).connect()
-        connection.client.send(vpn_destination.serialize())
-        connection.authenticate()
-
+            client_ip=self.inputs_dict['vpn_ip'],
+            client_port=self.inputs_dict['vpn_port'],
+            local_server_ip=self.inputs_dict['local_server_ip'],
+            local_server_port=self.inputs_dict['local_server_port'])
 
     def chat_window_trigger(self):
         try:
             self.inputs_triggers()
+            print(self.inputs_dict)
             user = cryptochat.User(user_id=self.inputs_dict['user_id']).login()
             connection = cryptochat.Connection(
                 client_ip=self.inputs_dict['host_ip'],
                 client_port=self.inputs_dict['host_port'],
-                server_ip=self.inputs_dict['local_server_ip'],
-                server_port=self.inputs_dict['local_server_port'])
-            
-            self.call_chat_window(cryptochat.Chat(user=user, connection=connection))
+                local_server_ip=self.inputs_dict['local_server_ip'],
+                local_server_port=self.inputs_dict['local_server_port'])
+            vpn = cryptochat.VpnDestination(
+                vpn_destination_ip=self.inputs_dict['vpn_ip'],
+                vpn_destination_port=self.inputs_dict['vpn_port'])
+
+            self.call_chat_window(
+                cryptochat.CryptoChatVpn(
+                    user=user, 
+                    connection=connection, 
+                    vpn=vpn
+                ))
         except Exception as e:
             print(e)
 

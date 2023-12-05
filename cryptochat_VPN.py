@@ -242,9 +242,9 @@ class VpnDestination:
 @dataclass(kw_only=True)
 class VpnServer(VpnDestination):
     vpn_user: User
-    local_server_ip: str = 'localhost'
-    local_server_port_source: int = 40002
-    local_server_port_destination: int = 50002
+    local_server_ip: str
+    local_server_port_source: int
+    local_server_port_destination: int
 
     source_ip: str
     source_port: int
@@ -299,7 +299,6 @@ class VpnServer(VpnDestination):
             local_server_ip=self.local_server_ip,
             local_server_port=self.local_server_port_destination
         ).connect()
-
 
 @dataclass(kw_only=True)
 class CryptoChatVpn(Cryptography, VpnDestination):
@@ -374,17 +373,14 @@ class CryptoChatVpn(Cryptography, VpnDestination):
         self.history = self.get_history()
         return self
 
-        
-
-
 if __name__ == '__main__':
     vpn = VpnServer(
         vpn_user=User(user_id='VPN').login(),
-        local_server_ip='localhost',
-        local_server_port_source=40002,
-        local_server_port_destination=50002,
-        source_ip='localhost',
-        source_port=40000,
+        local_server_ip='127.0.0.1',
+        local_server_port_source=50_002,
+        local_server_port_destination=60_002,
+        source_ip='127.0.0.1',
+        source_port=50_000,
     )
     vpn.connect_to_source()
 

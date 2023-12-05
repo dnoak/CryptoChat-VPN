@@ -149,9 +149,9 @@ class Authentication(Cryptography):
 @dataclass(kw_only=True)
 class Connection(Authentication):
     client_ip: str
-    client_port: int = 50000
-    local_server_ip: str = 'localhost'
-    local_server_port: int = 50001
+    client_port: int
+    local_server_ip: str
+    local_server_port: int
     server: socket.socket = None
     client: socket.socket = None
     server_is_online: bool = False
@@ -242,9 +242,9 @@ class VpnDestination:
 @dataclass(kw_only=True)
 class VpnServer(VpnDestination):
     vpn_user: User
-    local_server_ip: str = 'localhost'
-    local_server_port_source: int = 40002
-    local_server_port_destination: int = 50002
+    local_server_ip: str
+    local_server_port_source: int
+    local_server_port_destination: int
 
     source_ip: str
     source_port: int
@@ -372,25 +372,21 @@ class CryptoChatVpn(Cryptography, VpnDestination):
         self.history = self.get_history()
         return self
 
-        
 
 if __name__ == '__main__':
     user_A = User(user_id='A').login()
 
     vpn_connection = VpnDestination(
-        vpn_destination_ip='localhost', 
-        vpn_destination_port=50000)
+        vpn_destination_ip='127.0.0.1',
+        vpn_destination_port=60_000)
     
     A_connection = Connection(
-        client_ip='localhost',
-        client_port=40002,
-        local_server_ip='localhost',
-        local_server_port=40000,
+        client_ip='127.0.0.1',
+        client_port=50_002,
+        local_server_ip='127.0.0.1',
+        local_server_port=50_000,
     )
 
-    A_connection.client.send(vpn_connection.serialize())
-    A_connection.authenticate(user_A)
-    
     chat = CryptoChatVpn(
         user=user_A, 
         connection=A_connection,
