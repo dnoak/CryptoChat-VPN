@@ -12,7 +12,7 @@ class ChatWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.ui = Ui_CHAT()
         self.ui.setupUi(self)
-        self.chat = chat.start()
+        self.chat = chat
         self.update_chat()
         threading.Thread(target=self.receive_message_loop).start()
         self.send_message_loop()
@@ -97,13 +97,12 @@ class MainWindow(QtWidgets.QMainWindow):
             vpn = cryptochat.VpnDestination(
                 vpn_destination_ip=self.inputs_dict['vpn_ip'],
                 vpn_destination_port=self.inputs_dict['vpn_port'])
-
-            self.call_chat_window(
-                cryptochat.CryptoChatVpn(
+            chat = cryptochat.CryptoChatVpn(
                     user=user, 
                     connection=connection, 
-                    vpn=vpn
-                ))
+                    vpn=vpn if self.inputs_dict['vpn_ip'] else None,
+                ).start()
+            self.call_chat_window(chat)
         except Exception as e:
             print(e)
 

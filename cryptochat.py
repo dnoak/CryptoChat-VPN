@@ -49,7 +49,6 @@ class User(Cryptography):
     user_id: str
     private_key: PKCS1_OAEP = None
     public_key: PKCS1_OAEP = None
-    #friends: list[dict] = None
     unknown_friend_string: str = 'Desconhecido'
 
     def __post_init__(self):
@@ -161,7 +160,7 @@ class Connection(Authentication):
     def start_server(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        print(f'... Escutando a porta {self.local_server_ip}.')
+        print(f'... Escutando a porta {self.local_server_port}.')
         server_socket.bind((self.local_server_ip, self.local_server_port))
         server_socket.listen()
         self.server, address = server_socket.accept()
