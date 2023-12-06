@@ -10,7 +10,5 @@ if __name__ == '__main__':
         source_port=50_000,
     )
     vpn.connect_to_source()
-    print("----------src")
     vpn.connect_to_destination()
-    print("----------dest")
     vpn.authenticate_between_source_and_destination()

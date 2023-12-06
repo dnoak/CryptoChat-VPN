@@ -32,6 +32,7 @@ class ChatWindow(QtWidgets.QMainWindow):
         while True:
             self.chat.receive_message()
             self.update_chat()
+        
     def send_message_loop(self):
         self.ui.button_send_message.released.connect(self.send_message)
         self.ui.input_message.returnPressed.connect(self.send_message)

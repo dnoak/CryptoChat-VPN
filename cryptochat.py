@@ -170,8 +170,8 @@ class Connection(Authentication):
 
     def connect_to_client(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        for t in range(self.time_limit*2):
-            time.sleep(0.5)
+        for t in range(self.time_limit):
+            time.sleep(1)
             try:
                 self.client.connect((self.client_ip, self.client_port))
                 self.first_to_auth = True
