@@ -99,3 +99,9 @@ A: /add-friend oi
 A: /add=
 A: /add-friend B
 A: jehehe
+A: oi
+B: oi
+B: oi
+A: oi
+B: oi
+B: oi

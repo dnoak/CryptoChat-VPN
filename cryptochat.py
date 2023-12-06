@@ -234,7 +234,6 @@ class VpnDestination:
         return f"{self.vpn_destination_ip}:{self.vpn_destination_port}".encode()
     
     def deserialize(self, serialized):
-        print(f"Deserializando {serialized}")
         ip, port = serialized.decode().split(':')
         self.vpn_destination_ip = ip
         self.vpn_destination_port = int(port)
@@ -258,6 +257,7 @@ class VpnServer(VpnDestination):
                 send = connection_B.client.send(received)
                 print(f"Recebido de << {connection_A.client_ip}:{connection_A.client_port}")
                 print(f"Enviado para >> {connection_B.client_ip}:{connection_B.client_port}\n{received}\n")
+
         threading.Thread(target=threaded).start()
 
     def authenticate_between_source_and_destination(self):
@@ -363,9 +363,8 @@ class CryptoChatVpn(Cryptography, VpnDestination):
 
     def start(self):
         self.connection.connect()
-        print(self.vpn)
-        if self.vpn.vpn_destination_ip is not None:
-            time.sleep(1)
+        if self.vpn is not None:
+            time.sleep(2)
             self.connection.client.send(self.vpn.serialize())
         self.connection.authenticate(self.user)
 
