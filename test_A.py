@@ -13,7 +13,7 @@ if __name__ == '__main__':
         local_server_ip='127.0.0.1',
         local_server_port=50_000,
     )
-
+    
     chat = cryptochat.CryptoChatVpn(
         user=user_A, 
         connection=A_connection,
